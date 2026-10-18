@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espiral e Ilusión Óptica</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background-color: #000; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; cursor: default; }
+        #btn-inicio { padding: 18px 45px; font-size: 1.6rem; color: #ffffff; background: transparent; border: 2px solid #ffffff; border-radius: 50px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 25px rgba(255, 255, 255, 0.4); z-index: 10; }
+        #btn-inicio:hover { background-color: #ffffff; color: #000000; box-shadow: 0 0 35px rgba(255, 255, 255, 0.9); transform: scale(1.08); }
+        .controles { display: none; position: fixed; top: 25px; right: 25px; gap: 12px; z-index: 20; }
+        .btn-control { padding: 10px 22px; font-size: 0.95rem; color: #ffffff; background: rgba(0, 0, 0, 0.8); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 30px; backdrop-filter: blur(5px); cursor: pointer; transition: all 0.3s ease; }
+        .btn-control:hover { background: #ffffff; color: #000000; transform: scale(1.05); }
+        #canvas-container { display: none; position: absolute; width: 100%; height: 100%; cursor: pointer; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <audio id="miMusica" src="musica16.mp3" preload="auto" loop></audio>
+    <button id="btn-inicio">Inicio</button>
+    <div class="controles" id="panel-controles">
+        <button class="btn-control" id="btn-audio">🔊 Sonido: ON</button>
+        <button class="btn-control" id="btn-salir">Salir</button>
+    </div>
+    <div id="canvas-container">
+        <canvas id="ilusionCanvas"></canvas>
+    </div>
+    <script>
+        const btnInicio = document.getElementById('btn-inicio');
+        const btnSalir = document.getElementById('btn-salir');
+        const btnAudio = document.getElementById('btn-audio');
+        const panelControles = document.getElementById('panel-controles');
+        const canvasContainer = document.getElementById('canvas-container');
+        const canvas = document.getElementById('ilusionCanvas');
+        const ctx = canvas.getContext('2d');
+        const audioElement = document.getElementById('miMusica');
+
+        let animacionId = null;
+        let activo = false;
+        let angulo = 0;
+
+        function ajustarCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', ajustarCanvas);
+
+        btnAudio.addEventListener('click', (e) => {
+            e.stopPropagation();
+            audioElement.muted = !audioElement.muted;
+            btnAudio.textContent = audioElement.muted ? "🔇 Sonido: OFF" : "🔊 Sonido: ON";
+        });
+
+        btnInicio.addEventListener('click', () => {
+            btnInicio.style.display = 'none';
+            panelControles.style.display = 'flex';
+            canvasContainer.style.display = 'block';
+            ajustarCanvas();
+            angulo = 0;
+            activo = true;
+
+            audioElement.currentTime = 0;
+            audioElement.muted = false;
+            btnAudio.textContent = "🔊 Sonido: ON";
+            audioElement.play().catch(err => console.log(err));
+
+            iniciarAnimacion();
+        });
+
+        btnSalir.addEventListener('click', (e) => {
+            e.stopPropagation();
+            activo = false;
+            if (animacionId) cancelAnimationFrame(animacionId);
+
+            audioElement.pause();
+            audioElement.currentTime = 0;
+
+            canvasContainer.style.display = 'none';
+            panelControles.style.display = 'none';
+            btnInicio.style.display = 'block';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+        function iniciarAnimacion() {
+            if (!activo) return;
+
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const centroX = canvas.width / 2;
+            const centroY = canvas.height / 2;
+            const maxRadio = Math.max(canvas.width, canvas.height);
+
+            ctx.save();
+            ctx.translate(centroX, centroY);
+
+            let anillos = 30;
+            for (let i = 1; i <= anillos; i++) {
+                let r = (i / anillos) * maxRadio;
+                let numSectores = 24;
+
+                for (let j = 0; j < numSectores; j++) {
+                    let a1 = (j / numSectores) * Math.PI * 2 + (i % 2 === 0 ? angulo : -angulo);
+                    let a2 = ((j + 1) / numSectores) * Math.PI * 2 + (i % 2 === 0 ? angulo : -angulo);
+
+                    if ((j + i) % 2 === 0) {
+                        ctx.beginPath();
+                        ctx.arc(0, 0, r, a1, a2);
+                        ctx.lineTo(0, 0);
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fill();
+                    }
+                }
+            }
+
+            ctx.restore();
+            angulo += 0.015;
+            animacionId = requestAnimationFrame(iniciarAnimacion);
+        }
+    </script>
+</body>
+</html>
